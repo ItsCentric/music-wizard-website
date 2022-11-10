@@ -1,14 +1,12 @@
-import Container from "react-bootstrap/Container";
 import Link from 'next/link';
-import styles from '../styles/Footer.module.css';
 
 export default function Footer() {
     return (
-        <Container className={`${styles.footer} pt-2`} fluid>
+        <div className={`pt-2 bg-black h-20`}>
             <Link href='#'>
-                <a className='text-decoration-none text-light fw-semibold'><p className='text-center'>Back up</p></a>
+                <a className='text-decoration-none text-light'><p className='text-center font-semibold'>Back up</p></a>
             </Link>
             <p className={`text-center mb-0`}>© 2022 All Rights Reserved.</p>
-        </Container>
+        </div>
     )
 }

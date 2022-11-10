@@ -13,7 +13,7 @@ import * as mongodb from 'mongodb';
  * `accessToken` and `accessTokenExpires`. If an error occurs,
  * returns the old token and an error property
  */
-async function refreshAccessToken(token) {
+export async function refreshAccessToken(token) {
   try {
     const url =
       "https://accounts.spotify.com/api/token" +
@@ -66,16 +66,6 @@ export const authOptions: NextAuthOptions = {
             "user-read-recently-played user-read-playback-state user-read-email user-top-read user-read-currently-playing user-library-read user-read-private",
         },
       },
-    }),
-    EmailProvider({
-      server: {
-        host: process.env.EMAIL_SERVER_HOST,
-        port: process.env.EMAIL_SERVER_PORT,
-        auth: {
-          user: process.env.EMAIL_SERVER_USER,
-          pass: process.env.EMAIL_SERVER_PASSWORD
-        }
-      }
     }),
   ],
   callbacks: {

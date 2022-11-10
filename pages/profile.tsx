@@ -1,19 +1,14 @@
 import Head from "next/head";
 import Image from "next/image";
-import Container from "react-bootstrap/Container";
 import SiteNav from "../components/SiteNav";
-import { authOptions } from "./api/auth/[...nextauth]";
+import { authOptions, refreshAccessToken } from "./api/auth/[...nextauth]";
 import { unstable_getServerSession } from "next-auth/next";
 import axios from "axios";
-import Card from "react-bootstrap/Card";
-import CardGroup from "react-bootstrap/CardGroup";
-import ListGroup from 'react-bootstrap/ListGroup';
 import Link from "next/link";
 import { GetServerSideProps } from 'next';
-import { convertDuration } from "../lib/utils";
-import "bootstrap/dist/css/bootstrap.min.css";
-import styles from "../styles/Profile.module.css";
 import type { Session } from "next-auth"
+import SpotifyStatCard from "../components/SpotifyStatCard";
+import { decryption } from "../lib/utils";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   let SESSION = await unstable_getServerSession(
@@ -21,6 +16,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     context.res,
     authOptions
   );
+  if (new Date().toISOString() > SESSION.expires) SESSION = await refreshAccessToken(decryption(SESSION.refreshToken));
+
   const SPOTIFYDATA = await fetchSpotifyData(SESSION.accessToken);
     
   if (!SESSION) {
@@ -53,126 +50,95 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 export default function Profile(props: { SPOTIFYDATA: any; SESSION: Session; }) {
   const SPOTIFYDATA = props.SPOTIFYDATA;
   const SESSION: Session = props.SESSION;
-  const FORMATTER = new Intl.NumberFormat("en-US");
 
   return (
-    <div className="text-bg-dark">
+    <div>
       <Head>
         <title>Music Wizard | Profile</title>
         <meta name='robots' content='noindex' key='robots' />
-        <link rel="icon" href="public\spotify-logo.png" type="image/icon type"></link>
-        <link rel='canonical' href='https://spotify-bot.vercel.app/' key='canonical'/>
+        <link rel="icon" href="public\favicon.ico" type="image/icon type"></link>
+        <link rel='canonical' href='https://musicwizard.vercel.app/' key='canonical'/>
       </Head>
       <SiteNav></SiteNav>
 
-      <Container className={`d-flex flex-column p-0`} fluid>
+      <div className='flex flex-col p-0'>
         {/* USER INFORMATION */}
-        <Container className={`d-flex flex-column text-bg-light ${styles.userInfoContainer}`} fluid>
-          <Container className={`mt-3 mx-auto p-0 position-relative w-auto`}>
-            <Image
+        <div className='flex flex-col text-black bg-zinc-100 py-4 gap-2'>
+          <div className='mx-auto p-0 relative w-auto'>
+            <img src={SESSION.user.image} className='rounded-full border-4 border-zinc-700'></img>
+
+            {/* TODO: fix this to work with borders */}
+            {/* <Image
               src={SESSION.user.image}
               alt='User profile image'
               width="270"
               height="270"
-              className="rounded-circle border border-dark border-4"
-            ></Image>
-          </Container>
-          <Link href={SPOTIFYDATA.userInfo.external_urls.spotify}><h1 className="text-center">{SESSION.user.name}</h1></Link>
-          <Container className={`p-0 d-flex justify-content-center ${styles.userInfoTextContainer}`}>
-            <p className="d-inline-block fw-semibold text-center me-2"><span className="fw-bold fs-4">Country:</span> {'\n'}{SPOTIFYDATA.userInfo.country}</p>
-            <p className="d-inline-block fw-semibold text-center me-2"><span className="fw-bold fs-4">Followers:</span> {'\n'}{SPOTIFYDATA.userInfo.followers.total}</p>
-            <p className="d-inline-block fw-semibold text-center"><span className="fw-bold fs-4">Plan:</span> {'\n'}{SPOTIFYDATA.userInfo.product == "open" ? "Free" : "Premium"}</p>
-          </Container>
-          <Container className={`p-0 d-flex ${styles.userInfoTextContainer}`}>
-          </Container>
-        </Container>
+              className='rounded-full border-4 border-black'
+            ></Image> */}
+
+          </div>
+          <span className='text-center text-3xl font-medium'><Link href={SPOTIFYDATA.userInfo.external_urls.spotify}>{SESSION.user.name}</Link></span>
+          <div className='flex justify-center gap-4'>
+            <p className="inline-block font-medium text-center w-full h-full">
+              <span className="font-bold text-2xl">Country:</span>
+              <br/>
+              {SPOTIFYDATA.userInfo.country}
+            </p>
+            <p className="inline-block font-medium text-center w-full h-full">
+              <span className="font-bold text-2xl">Followers:</span>
+              <br/>
+              {SPOTIFYDATA.userInfo.followers.total}
+            </p>
+            <p className="inline-block font-medium text-center w-full h-full">
+              <span className="font-bold text-2xl">Plan:</span>
+              <br/>
+              {SPOTIFYDATA.userInfo.product == "open" ? "Free" : "Premium"}
+            </p>
+          </div>
+        </div>
 
         {/* USER STATS */}
-        <Container className={`px-5 d-flex flex-column ${styles.userStatsContainer} my-5`}>
+        <div className='px-12 flex flex-col gap-8 my-12 max-w-6xl w-full mx-auto'>
+
           {/* TOP TRACKS */}
-          <Container>
-            <h1 className={`d-inline-block ${styles.userStatsFlex}`}>Top 3 Tracks</h1>
-            <p className="d-inline-block fw-light ms-2 text-white-50">{`(Last 6 months)`}</p>
-            <CardGroup>
-              <Card className={styles.statCard}>
-                <Card.Img variant="top" src={SPOTIFYDATA.topTracks.items[0].album.images[0].url}></Card.Img>
-                <Card.Title className="text-dark ms-2 mt-1 mb-1">{SPOTIFYDATA.topTracks.items[0].name}</Card.Title>
-                <Card.Subtitle className="text-dark ms-2">{SPOTIFYDATA.topTracks.items[0].artists[0].name}</Card.Subtitle>
-                <ListGroup variant="flush" className="mt-3">
-                  <ListGroup.Item><span className="fw-bold">Released:</span> {SPOTIFYDATA.topTracks.items[0].album.release_date}</ListGroup.Item>
-                  <ListGroup.Item><span className="fw-bold">Duration:</span> {convertDuration(SPOTIFYDATA.topTracks.items[0].duration_ms)}</ListGroup.Item>
-                </ListGroup>
-              </Card>
-              <Card className={styles.statCard}>
-                <Card.Img variant="top" src={SPOTIFYDATA.topTracks.items[1].album.images[0].url}></Card.Img>
-                <Card.Title className="text-dark ms-2 mt-1 mb-1">{SPOTIFYDATA.topTracks.items[1].name}</Card.Title>
-                <Card.Subtitle className="text-dark ms-2">{SPOTIFYDATA.topTracks.items[1].artists[0].name}</Card.Subtitle>
-                <ListGroup variant="flush" className="mt-3">
-                  <ListGroup.Item><span className="fw-bold">Released:</span> {SPOTIFYDATA.topTracks.items[1].album.release_date}</ListGroup.Item>
-                  <ListGroup.Item><span className="fw-bold">Duration:</span> {convertDuration(SPOTIFYDATA.topTracks.items[1].duration_ms)}</ListGroup.Item>
-                </ListGroup>
-              </Card>
-              <Card className={styles.statCard}>
-                <Card.Img variant="top" src={SPOTIFYDATA.topTracks.items[2].album.images[0].url}></Card.Img>
-                <Card.Title className="text-dark ms-2 mt-1 mb-1">{SPOTIFYDATA.topTracks.items[2].name}</Card.Title>
-                <Card.Subtitle className="text-dark ms-2">{SPOTIFYDATA.topTracks.items[2].artists[0].name}</Card.Subtitle>
-                <ListGroup variant="flush" className="mt-3">
-                  <ListGroup.Item><span className="fw-bold">Released:</span> {SPOTIFYDATA.topTracks.items[2].album.release_date}</ListGroup.Item>
-                  <ListGroup.Item><span className="fw-bold">Duration:</span> {convertDuration(SPOTIFYDATA.topTracks.items[2].duration_ms)}</ListGroup.Item>
-                </ListGroup>
-              </Card>
-            </CardGroup>
-          </Container>
+          <div>
+            <h2 className='inline-block text-3xl mb-3'>Top 3 Tracks</h2>
+            <p className="inline-block font-light ml-2 text-white/50">{'(Last 6 months)'}</p>
+
+            <div className='flex flex-col md:flex-row md:justify-evenly gap-4'>
+              <SpotifyStatCard type='track' data={SPOTIFYDATA.topTracks.items[0]} />
+              <SpotifyStatCard type='track' data={SPOTIFYDATA.topTracks.items[1]} />
+              <SpotifyStatCard type='track' data={SPOTIFYDATA.topTracks.items[2]} />
+            </div>
+          </div>
 
           {/* TOP ARTISTS */}
-          <Container>
-            <h1 className={`d-inline-block ${styles.userStatsFlex}`}>Top 3 Artists</h1>
-            <p className="d-inline-block fw-light ms-2 text-white-50">{`(Last 6 months)`}</p>
-            <CardGroup>
-              <Card>
-                <Card.Img variant="top" src={SPOTIFYDATA.topArtists.items[0].images[0].url}></Card.Img>
-                <Card.Title className="text-dark ms-2 mt-1 mb-1">{SPOTIFYDATA.topArtists.items[0].name}</Card.Title>
-                <Card.Subtitle className="text-dark ms-2">{SPOTIFYDATA.topArtists.items[0].genres[0]}</Card.Subtitle>
-                <ListGroup variant="flush" className="mt-3">
-                  <ListGroup.Item><span className="fw-bold">Followers:</span> {FORMATTER.format(SPOTIFYDATA.topArtists.items[0].followers.total)}</ListGroup.Item>
-                  <ListGroup.Item><span className="fw-bold">Popularity:</span> {SPOTIFYDATA.topArtists.items[0].popularity}</ListGroup.Item>
-                </ListGroup>
-              </Card>
-              <Card>
-                <Card.Img variant="top" src={SPOTIFYDATA.topArtists.items[1].images[0].url}></Card.Img>
-                <Card.Title className="text-dark ms-2 mt-1 mb-1">{SPOTIFYDATA.topArtists.items[1].name}</Card.Title>
-                <Card.Subtitle className="text-dark ms-2">{SPOTIFYDATA.topArtists.items[1].genres[0]}</Card.Subtitle>
-                <ListGroup variant="flush" className="mt-3">
-                  <ListGroup.Item><span className="fw-bold">Followers:</span> {FORMATTER.format(SPOTIFYDATA.topArtists.items[1].followers.total)}</ListGroup.Item>
-                  <ListGroup.Item><span className="fw-bold">Popularity:</span> {SPOTIFYDATA.topArtists.items[1].popularity}</ListGroup.Item>
-                </ListGroup>
-              </Card>
-              <Card>
-                <Card.Img variant="top" src={SPOTIFYDATA.topArtists.items[2].images[0].url}></Card.Img>
-                <Card.Title className="text-dark ms-2 mt-1 mb-1">{SPOTIFYDATA.topArtists.items[2].name}</Card.Title>
-                <Card.Subtitle className="text-dark ms-2">{SPOTIFYDATA.topArtists.items[2].genres[0]}</Card.Subtitle>
-                <ListGroup variant="flush" className="mt-3">
-                  <ListGroup.Item><span className="fw-bold">Followers:</span> {FORMATTER.format(SPOTIFYDATA.topArtists.items[2].followers.total)}</ListGroup.Item>
-                  <ListGroup.Item><span className="fw-bold">Popularity:</span> {SPOTIFYDATA.topArtists.items[2].popularity}</ListGroup.Item>
-                </ListGroup>
-              </Card>
-            </CardGroup>
-          </Container>
-        </Container>
-      </Container>
-      <Container className={`d-flex align-items-center justify-content-center mb-4`}>
-        <h2 className='m-0 me-3'>Powered by</h2>
+          <div>
+            <h1 className='inline-block text-3xl mb-3'>Top 3 Artists</h1>
+            <p className="inline-block font-light ml-2 text-white/50">{'(Last 6 months)'}</p>
+
+            <div className='flex flex-col md:flex-row md:justify-evenly gap-4'>
+              <SpotifyStatCard type='artist' data={SPOTIFYDATA.topArtists.items[0]} />
+              <SpotifyStatCard type='artist' data={SPOTIFYDATA.topArtists.items[1]} />
+              <SpotifyStatCard type='artist' data={SPOTIFYDATA.topArtists.items[2]} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className='flex items-center justify-center mb-4'>
+        <p className='m-0 mr-3 font-medium text-2xl'>Powered by</p>
         <Image
           src={require('../public/greenspotifylogo.png')}
           width={200}
           height={60}
         ></Image>
-      </Container>
+      </div>
     </div>
   );
 }
 
-async function fetchSpotifyData(token: unknown) {
+async function fetchSpotifyData(token: any) {
   interface SpotifyData {
     userInfo: object,
     topTracks: object,
