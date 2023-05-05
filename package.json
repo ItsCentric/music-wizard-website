@@ -16,7 +16,7 @@
     "countries-list": "^2.6.1",
     "date-fns": "^2.29.3",
     "dotenv": "^16.0.3",
-    "mongodb": "^4.9.0",
+    "mongodb": "^4.15.0",
     "mongoose": "^7.0.3",
     "next": "^13.1.6",
     "next-auth": "^4.20.1",
