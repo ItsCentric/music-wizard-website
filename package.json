@@ -27,7 +27,7 @@
     "react-icons": "^4.8.0",
     "redis": "^4.6.5",
     "uuid": "^8.3.2",
-    "vercel": "^28.7.1"
+    "vercel": "^32.2.0"
   },
   "devDependencies": {
     "@types/axios": "^0.14.0",
